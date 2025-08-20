@@ -2,16 +2,12 @@
   "version": 2,
   "routes": [
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
       "src": "/test",
       "dest": "/api/test.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/minimal.js"
+      "dest": "/api/full.js"
     }
   ]
 }
