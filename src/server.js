@@ -15,11 +15,16 @@ function generateId(length = 8) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Vercel 환경 대응
+const isVercel = process.env.VERCEL || process.env.NODE_ENV === 'production';
+const viewsPath = isVercel ? path.join(process.cwd(), 'src/views') : path.join(__dirname, 'views');
+const assetsPath = isVercel ? path.join(process.cwd(), 'src/assets') : path.join(__dirname, 'assets');
+
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', viewsPath);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use('/assets', express.static(assetsPath));
 
 // In-memory store (simple)
 const pageStore = new Map();
@@ -549,13 +554,37 @@ app.post('/generate', async (req, res) => {
 });
 
 app.get('/p/:id', (req, res) => {
-  const data = pageStore.get(req.params.id);
-  if (!data) return res.status(404).send('페이지가 존재하지 않습니다.');
-  res.render('templates/naver', { data });
+  try {
+    const data = pageStore.get(req.params.id);
+    if (!data) return res.status(404).send('페이지가 존재하지 않습니다.');
+    res.render('templates/naver', { data });
+  } catch (error) {
+    console.error('페이지 렌더링 오류:', error);
+    res.status(500).send('페이지 렌더링 중 오류가 발생했습니다.');
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`Fake shopping server listening on http://localhost:${PORT}`);
+// 404 핸들러
+app.use((req, res) => {
+  res.status(404).send('페이지를 찾을 수 없습니다.');
 });
+
+// 전역 에러 핸들러
+app.use((err, req, res, next) => {
+  console.error('서버 오류:', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? '서버 오류가 발생했습니다.' : err.message
+  });
+});
+
+// Vercel에서는 module.exports 사용
+if (isVercel) {
+  module.exports = app;
+} else {
+  app.listen(PORT, () => {
+    console.log(`Fake shopping server listening on http://localhost:${PORT}`);
+  });
+}
 
 
