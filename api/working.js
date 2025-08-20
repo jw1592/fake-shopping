@@ -29,56 +29,128 @@ function urlSafeBase64Decode(encoded) {
   }
 }
 
-// 다나와 스크래핑 (간단한 버전)
+// 다나와 스크래핑 (개선된 버전)
 async function scrapeDanawa(productUrl) {
   try {
     console.log('Scraping Danawa:', productUrl);
     
     const response = await axios.get(productUrl, {
       headers: {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
+        'Accept-Encoding': 'gzip, deflate',
+        'Referer': 'https://shop.danawa.com/',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
       },
-      timeout: 10000
+      timeout: 15000
     });
     
+    console.log('Response status:', response.status, 'Length:', response.data.length);
     const $ = cheerio.load(response.data);
     
-    // 제목 추출
-    let title = $("meta[property='og:title']").attr('content') || '';
-    if (!title) {
-      title = $('.prod_view_head, .prod_tit, h1').first().text().trim();
+    // 제목 추출 (여러 방법 시도)
+    let title = '';
+    const titleSelectors = [
+      'meta[property="og:title"]',
+      '.prod_view_head',
+      '.prod_tit',
+      'h1',
+      'title',
+      '.product_title',
+      '.goods_name'
+    ];
+    
+    for (const selector of titleSelectors) {
+      if (!title) {
+        if (selector.startsWith('meta')) {
+          title = $(selector).attr('content');
+        } else {
+          title = $(selector).first().text().trim();
+        }
+        if (title) {
+          console.log(`Title found with selector "${selector}":`, title.substring(0, 50));
+          break;
+        }
+      }
     }
     
     // 이미지 수집
     const images = [];
-    $("meta[property='og:image']").each((_, el) => {
+    
+    // OG 이미지
+    $('meta[property="og:image"]').each((_, el) => {
       const img = $(el).attr('content');
-      if (img) images.push(img);
+      if (img && img.startsWith('http')) {
+        images.push(img);
+        console.log('OG Image found');
+      }
     });
     
-    $('.prod_view_thumb img, .prod_con_img img').each((_, el) => {
+    // 썸네일 이미지
+    $('.prod_view_thumb img').each((_, el) => {
       const img = $(el);
-      const src = img.attr('src') || img.attr('data-src');
-      if (src && src.startsWith('http')) {
+      let src = img.attr('src') || img.attr('data-src') || img.attr('data-original');
+      if (src) {
+        if (src.startsWith('//')) src = 'https:' + src;
+        if (src.startsWith('http')) {
+          images.push(src);
+          console.log('Thumbnail found');
+        }
+      }
+    });
+    
+    // 상세 이미지
+    $('.prod_con_img img').each((_, el) => {
+      const img = $(el);
+      let src = img.attr('src') || img.attr('data-src') || img.attr('data-original');
+      if (src) {
+        if (src.startsWith('//')) src = 'https:' + src;
+        if (src.startsWith('http')) {
+          images.push(src);
+          console.log('Detail image found');
+        }
+      }
+    });
+    
+    // 일반적인 상품 이미지들도 확인
+    $('img').each((_, el) => {
+      const img = $(el);
+      let src = img.attr('src') || img.attr('data-src');
+      if (src && src.includes('prod') && src.startsWith('http')) {
         images.push(src);
       }
     });
     
     const uniqueImages = [...new Set(images)].slice(0, 10);
     
-    console.log('Scraping result:', { title: title.substring(0, 50), images: uniqueImages.length });
+    // 상품 설명 추출
+    let description = $('.prod_view_head').text().trim();
+    if (!description) {
+      description = $('.product_desc, .goods_desc').first().text().trim();
+    }
     
-    return {
+    const result = {
       title: title || '상품명 추출 실패',
       images: uniqueImages,
       listPrice: '',
-      description: ''
+      description: description ? description.substring(0, 200) : ''
     };
+    
+    console.log('Scraping result:', { 
+      title: result.title.substring(0, 50), 
+      images: result.images.length,
+      hasDescription: !!result.description 
+    });
+    
+    return result;
     
   } catch (error) {
     console.error('Scraping error:', error.message);
+    console.error('Error status:', error.response?.status, error.response?.statusText);
     return {
-      title: '스크래핑 오류',
+      title: '스크래핑 오류: ' + error.message,
       images: [],
       listPrice: '',
       description: ''
