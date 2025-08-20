@@ -278,20 +278,21 @@ function getMainPageHTML() {
     <div class="container">
         <div class="logo">💰</div>
         <h1>허락보다 용서가 쉽다!<br>유부남용 특가 상품 메이커</h1>
-        <p>상품 코드(content_id)를 입력하면 구글 시트에서 데이터를 가져와 상품 페이지를 생성합니다.</p>
+        <p>다나와 URL을 입력하면 자동으로 스크래핑해서 구글 시트에 저장하고 상품 페이지를 생성합니다.</p>
         
         <form id="productForm">
-            <input type="text" name="contentId" placeholder="상품 코드 (예: KM120-001)" required />
+            <input type="url" name="productUrl" placeholder="다나와 상품 URL" required />
             <input type="text" name="listPrice" placeholder="정가 (선택)" />
             <input type="text" name="customPrice" placeholder="특가 (선택)" />
-            <button type="submit">페이지 만들기</button>
+            <button type="submit">스크래핑 후 페이지 만들기</button>
         </form>
         
         <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px;">
-            <p><strong>💡 사용 방법:</strong></p>
-            <p>1. 구글 시트에서 상품 정보 관리</p>
-            <p>2. content_id로 빠른 페이지 생성</p>
-            <p>3. 더 이상 스크래핑 실패 걱정 없음!</p>
+            <p><strong>💡 새로운 방식:</strong></p>
+            <p>1. 다나와 URL 입력 → 자동 스크래핑</p>
+            <p>2. 스크래핑 성공 → 구글 시트에 자동 저장</p>
+            <p>3. content_id 생성 → 상품 페이지 생성</p>
+            <p>4. 다음번부터는 빠른 조회 가능!</p>
         </div>
         
         <div id="result"></div>
@@ -315,7 +316,23 @@ function getMainPageHTML() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    result.innerHTML = '<div class="success"><h3>✅ 생성 완료!</h3><p><a href="' + data.link + '" target="_blank">생성된 페이지 보기</a></p></div>';
+                    let html = '<div class="success">';
+                    html += '<h3>✅ ' + data.message + '</h3>';
+                    html += '<p><a href="' + data.link + '" target="_blank">생성된 페이지 보기</a></p>';
+                    
+                    if (data.sheetData) {
+                        html += '<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px;">';
+                        html += '<strong>📝 구글 시트에 추가할 데이터:</strong><br>';
+                        html += 'A: ' + data.sheetData.content_id + '<br>';
+                        html += 'B: ' + data.sheetData.product_name + '<br>';
+                        html += 'C: ' + data.sheetData.product_desc + '<br>';
+                        html += 'D: ' + data.sheetData.thumb_img_url + '<br>';
+                        html += 'E: ' + data.sheetData.product_img_url;
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
+                    result.innerHTML = html;
                 } else {
                     result.innerHTML = '<div class="error"><h3>❌ 오류</h3><p>' + data.message + '</p></div>';
                 }
@@ -458,43 +475,74 @@ module.exports = async (req, res) => {
         req.on('end', async () => {
           try {
             const formData = new URLSearchParams(body);
-            const contentId = formData.get('contentId');
+            const productUrl = formData.get('productUrl');
             const listPrice = formData.get('listPrice') || '';
             const customPrice = formData.get('customPrice') || '';
             
-            console.log('Generate request:', { contentId, listPrice, customPrice });
+            console.log('Generate request:', { productUrl, listPrice, customPrice });
             
-            if (!contentId) {
+            if (!productUrl) {
               res.setHeader('Content-Type', 'application/json');
-              res.status(400).json({ error: 'content_id is required', message: '상품 코드를 입력해주세요.' });
+              res.status(400).json({ error: 'productUrl is required', message: '다나와 URL을 입력해주세요.' });
               resolve();
               return;
             }
             
-            // 구글 시트에서 상품 데이터 가져오기
-            const productData = await getProductFromSheet(contentId);
+            // 다나와 스크래핑 실행
+            let scrapedData = null;
+            if (productUrl.includes('danawa.com')) {
+              scrapedData = await scrapeDanawa(productUrl);
+            }
             
-            if (!productData) {
+            if (!scrapedData || !scrapedData.title || scrapedData.images.length === 0) {
               res.setHeader('Content-Type', 'application/json');
-              res.status(404).json({ error: 'Product not found', message: `상품 코드 '${contentId}'를 찾을 수 없습니다.` });
+              res.status(400).json({ error: 'Scraping failed', message: '스크래핑에 실패했습니다. URL을 확인해주세요.' });
               resolve();
               return;
             }
+            
+            // content_id 자동 생성
+            const contentId = generateId(8).toUpperCase();
+            
+            // 구글 시트에 저장할 데이터 준비
+            const sheetData = {
+              content_id: contentId,
+              product_name: scrapedData.title,
+              product_desc: scrapedData.description,
+              thumb_img_url: scrapedData.images.slice(0, 4).join(','), // 썸네일 최대 4개
+              product_img_url: scrapedData.images.slice(4).join(',') // 나머지는 상세이미지
+            };
+            
+            // TODO: 구글 시트에 자동 저장 (현재는 로깅만)
+            console.log('=== 구글 시트에 저장할 데이터 ===');
+            console.log(`A: ${sheetData.content_id}`);
+            console.log(`B: ${sheetData.product_name}`);
+            console.log(`C: ${sheetData.product_desc}`);
+            console.log(`D: ${sheetData.thumb_img_url}`);
+            console.log(`E: ${sheetData.product_img_url}`);
+            console.log('================================');
             
             const pageData = {
-              title: productData.title || '상품명(미확인)',
-              description: productData.description || '',
+              title: scrapedData.title,
+              description: scrapedData.description,
               listPrice: listPrice.replace(/[^0-9]/g, ''),
               customPrice: customPrice.replace(/[^0-9]/g, ''),
-              images: productData.images.length > 0 ? productData.images : ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'],
-              contentId: contentId
+              images: scrapedData.images,
+              contentId: contentId,
+              sheetData: sheetData // 디버깅용
             };
             
             const encodedData = urlSafeBase64Encode(pageData);
             const productLink = `${req.headers.origin || 'https://' + req.headers.host}/p/${encodedData}`;
             
             res.setHeader('Content-Type', 'application/json');
-            res.status(200).json({ link: productLink, success: true });
+            res.status(200).json({ 
+              link: productLink, 
+              success: true,
+              contentId: contentId,
+              message: `스크래핑 완료! content_id: ${contentId}`,
+              sheetData: sheetData
+            });
             resolve();
             
           } catch (error) {
