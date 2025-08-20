@@ -72,6 +72,8 @@ async function scrapeDanawa(productUrl) {
           title = $(selector).first().text().trim();
         }
         if (title) {
+          // 불필요한 텍스트 제거 (샵다나와, 다나와 등)
+          title = title.replace(/\s*:\s*(샵)?다나와.*$/i, '').trim();
           console.log(`Title found with selector "${selector}":`, title.substring(0, 50));
           break;
         }
@@ -494,7 +496,7 @@ function getProductPageHTML(data) {
                 
                 <div class="options-section">
                     <div class="option-title">옵션 선택</div>
-                    <select class="option-select" onclick="alert('옵션 선택')">
+                    <select class="option-select">
                         <option>기본형 (추가금액 없음)</option>
                         <option>고급형 (+5,000원)</option>
                         <option>프리미엄형 (+10,000원)</option>
@@ -502,8 +504,8 @@ function getProductPageHTML(data) {
                 </div>
                 
                 <div class="buttons">
-                    <button class="btn cart-btn" onclick="alert('로그인이 필요합니다.')">🛒 장바구니</button>
-                    <button class="btn buy-btn" onclick="alert('로그인이 필요합니다.')">💳 바로구매</button>
+                    <button class="btn cart-btn">🛒 장바구니</button>
+                    <button class="btn buy-btn">💳 바로구매</button>
                 </div>
                 
                 <div class="seller-info">
@@ -574,7 +576,7 @@ function getProductPageHTML(data) {
             </div>
             
             <div class="footer-bottom">
-                <p>© 2024 핫딜닷컴 Corp. All rights reserved. | 대표: 홍길동 | 사업자등록번호: 123-45-67890</p>
+                <p>© 2024 핫딜닷컴 Corp. All rights reserved. | 대표: 김현철 | 사업자등록번호: 123-45-67890</p>
                 <p>주소: 서울특별시 강남구 테헤란로 123, 핫딜빌딩 10층 | 통신판매업신고: 제2024-서울강남-0000호</p>
                 <p style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">
                     본 사이트는 데모 페이지입니다. 실제 판매나 거래가 이루어지지 않습니다.
