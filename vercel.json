@@ -7,7 +7,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/full.js"
+      "dest": "/api/persistent.js"
     }
   ]
 }
