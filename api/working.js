@@ -179,8 +179,7 @@ function getMainPageHTML() {
         .logo { font-size: 3rem; margin-bottom: 1rem; }
         h1 { font-size: 1.8rem; margin-bottom: 2rem; }
         form { background: white; color: #333; padding: 30px; border-radius: 8px; margin: 20px 0; }
-        input, textarea, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        textarea { resize: vertical; font-family: inherit; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { background: #667eea; color: white; border: none; cursor: pointer; font-size: 16px; }
         button:hover { background: #5a67d8; }
         .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
@@ -192,17 +191,13 @@ function getMainPageHTML() {
     <div class="container">
         <div class="logo">💰</div>
         <h1>허락보다 용서가 쉽다!<br>유부남용 특가 상품 메이커</h1>
-        <p>다나와 URL로 자동 스크래핑하거나, 수동으로 정보를 입력해서 상품 페이지를 생성할 수 있습니다.</p>
+        <p>다나와 URL을 입력하면 자동으로 상품 페이지를 생성합니다.</p>
         
         <form id="productForm">
-            <input type="url" name="productUrl" placeholder="다나와 상품 URL (선택)" />
-            <input type="text" name="manualTitle" placeholder="상품명" required />
+            <input type="url" name="productUrl" placeholder="다나와 상품 URL" required />
+            <input type="text" name="manualTitle" placeholder="상품명 (선택 - 자동 추출됨)" />
             <input type="text" name="listPrice" placeholder="정가 (선택)" />
             <input type="text" name="customPrice" placeholder="특가 (선택)" />
-            <textarea name="imageUrls" placeholder="이미지 URL들 (한 줄당 하나씩)" rows="4"></textarea>
-            <small style="color: #666; display: block; margin-top: -5px; margin-bottom: 10px;">
-                * URL이 제공되면 자동 스크래핑을 시도하고, 실패 시 수동 입력 정보를 사용합니다.
-            </small>
             <button type="submit">페이지 만들기</button>
         </form>
         
@@ -227,9 +222,7 @@ function getMainPageHTML() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    const statusIcon = data.usedManualInput ? '⚠️' : '✅';
-                    const statusMessage = data.message || '생성 완료!';
-                    result.innerHTML = '<div class="success"><h3>' + statusIcon + ' ' + statusMessage + '</h3><p><a href="' + data.link + '" target="_blank">생성된 페이지 보기</a></p></div>';
+                    result.innerHTML = '<div class="success"><h3>✅ 생성 완료!</h3><p><a href="' + data.link + '" target="_blank">생성된 페이지 보기</a></p></div>';
                 } else {
                     result.innerHTML = '<div class="error"><h3>❌ 오류</h3><p>' + data.message + '</p></div>';
                 }
@@ -244,6 +237,7 @@ function getMainPageHTML() {
 
 // 상품 페이지 HTML
 function getProductPageHTML(data) {
+  console.log('Generating page with data:', JSON.stringify(data, null, 2));
   const images = data.images || ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'];
   const mainImage = images[0];
   const thumbnails = images.slice(0, 4);
@@ -366,43 +360,18 @@ module.exports = async (req, res) => {
         req.on('end', async () => {
           try {
             const formData = new URLSearchParams(body);
-            const productUrl = formData.get('productUrl') || '';
+            const productUrl = formData.get('productUrl');
             const manualTitle = formData.get('manualTitle') || '';
             const listPrice = formData.get('listPrice') || '';
             const customPrice = formData.get('customPrice') || '';
-            const imageUrls = formData.get('imageUrls') || '';
             
-            console.log('Generate request:', { productUrl, manualTitle, hasImageUrls: !!imageUrls });
+            console.log('Generate request:', { productUrl, manualTitle });
             
             let scraped = { title: '', images: [], listPrice: '', description: '' };
-            let scrapingError = '';
             
-            // 다나와 스크래핑 시도 (URL이 있을 때만)
+            // 다나와 스크래핑 시도
             if (productUrl && productUrl.includes('danawa.com')) {
-              try {
-                scraped = await scrapeDanawa(productUrl);
-              } catch (error) {
-                scrapingError = error.message;
-                console.log('Scraping failed, using manual inputs only:', error.message);
-              }
-            }
-            
-            // 수동 이미지 URL 처리
-            let manualImages = [];
-            if (imageUrls) {
-              manualImages = imageUrls.split('\n')
-                .map(url => url.trim())
-                .filter(url => url && url.startsWith('http'));
-            }
-            
-            // 이미지 우선순위: 스크래핑된 이미지 > 수동 입력 이미지 > 기본 이미지
-            let finalImages = [];
-            if (scraped.images && scraped.images.length > 0) {
-              finalImages = scraped.images;
-            } else if (manualImages.length > 0) {
-              finalImages = manualImages;
-            } else {
-              finalImages = ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'];
+              scraped = await scrapeDanawa(productUrl);
             }
             
             const pageData = {
@@ -410,24 +379,15 @@ module.exports = async (req, res) => {
               description: scraped.description || '',
               listPrice: (listPrice || scraped.listPrice || '').replace(/[^0-9]/g, ''),
               customPrice: customPrice.replace(/[^0-9]/g, ''),
-              images: finalImages,
-              productUrl: productUrl,
-              scrapingError: scrapingError
+              images: scraped.images.length > 0 ? scraped.images : ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'],
+              productUrl: productUrl
             };
             
             const encodedData = urlSafeBase64Encode(pageData);
             const productLink = `${req.headers.origin || 'https://' + req.headers.host}/p/${encodedData}`;
             
             res.setHeader('Content-Type', 'application/json');
-            const successMessage = scrapingError 
-              ? `페이지 생성 완료! (스크래핑 실패로 수동 입력 정보 사용됨: ${scrapingError})`
-              : '페이지 생성 완료!';
-            res.status(200).json({ 
-              link: productLink, 
-              success: true, 
-              message: successMessage,
-              usedManualInput: !!scrapingError || !productUrl
-            });
+            res.status(200).json({ link: productLink, success: true });
             resolve();
             
           } catch (error) {
