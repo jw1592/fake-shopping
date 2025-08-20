@@ -10,7 +10,7 @@ const crypto = require('crypto');
 function generateId(length = 8) {
   return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
 }
-let puppeteer; // lazy load
+// Puppeteer removed for Vercel compatibility
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -432,137 +432,10 @@ async function scrapeWithPuppeteer(productUrl, site) {
     return { title: '제목 추출 실패', listPrice: '', salePrice: '', images: [], descriptionHtml: '' };
   }
 
-  if (!puppeteer) {
-    puppeteer = require('puppeteer');
-  }
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
-    await page.setExtraHTTPHeaders({ 'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7' });
-    await page.goto(productUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-    // 실 DOM에서 이미지/상세 추출
-    const domData = await page.evaluate(() => {
-      const getText = (sel) => {
-        const el = document.querySelector(sel);
-        return el ? (el.textContent || '').trim() : '';
-      };
-      const metas = (name) => Array.from(document.querySelectorAll(`meta[property="${name}"]`)).map(m => m.getAttribute('content')).filter(Boolean);
-      const title = (metas('og:title')[0]) || document.title || getText('h1, h2, h3, .product_title, .product-name');
-      
-      // 더 다양한 이미지 소스 수집
-      const imgEls = Array.from(document.images || []);
-      const imgs = [];
-      imgEls.forEach(img => {
-        const candidates = [
-          img.getAttribute('src'),
-          img.getAttribute('data-src'),
-          img.getAttribute('data-original'),
-          img.getAttribute('data-lazy'),
-          img.getAttribute('data-lazy-src'),
-          img.getAttribute('data-origin'),
-          img.getAttribute('data-thumb'),
-          img.getAttribute('data-large')
-        ].filter(Boolean);
-        
-        candidates.forEach(src => {
-          if (src && src.startsWith('http') && /pstatic\.net|shop-phinf|shopping-phinf|static\.naver|cdn\.naver/i.test(src)) {
-            imgs.push(src);
-          }
-        });
-      });
-      
-      const detailSel = '.se-main-container, [data-nv-handle="PRODUCT_DETAIL"], #INTRODUCE, #INTRODUCE div, #info, #content, .detail_area, .product_detail';
-      const detailEl = document.querySelector(detailSel);
-      const detailHtml = detailEl ? detailEl.innerHTML : '';
-      
-      // 이미지 수집 재활성화
-      const images = [];
-      const imageSet = new Set();
-      
-      // 1. se-main-container 내부 이미지 우선 수집
-      const seContainer = document.querySelector('.se-main-container');
-      if (seContainer) {
-        const seImages = seContainer.querySelectorAll('img');
-        seImages.forEach(img => {
-          const candidates = [
-            img.src, img.getAttribute('data-src'), img.getAttribute('data-original'),
-            img.getAttribute('data-lazy'), img.getAttribute('data-lazy-src'),
-            img.dataset.src, img.dataset.original
-          ].filter(Boolean);
-          
-          candidates.forEach(src => {
-            if (src && src.startsWith('http') && 
-                /pstatic\.net|shop-phinf|shopping-phinf|static\.naver|cdn\.naver/i.test(src) && 
-                !imageSet.has(src)) {
-              imageSet.add(src);
-              images.push(src);
-            }
-          });
-        });
-      }
-      
-      // 2. 전체 페이지에서 네이버 상품 이미지 수집
-      const allImages = document.querySelectorAll('img');
-      allImages.forEach(img => {
-        const candidates = [
-          img.src, img.getAttribute('data-src'), img.getAttribute('data-original'),
-          img.getAttribute('data-lazy'), img.getAttribute('data-lazy-src'),
-          img.getAttribute('data-origin'), img.getAttribute('data-thumb'),
-          img.getAttribute('data-large'), img.getAttribute('data-zoom')
-        ].filter(Boolean);
-        
-        candidates.forEach(src => {
-          if (src && src.startsWith('http') && 
-              /pstatic\.net|shop-phinf|shopping-phinf|static\.naver|cdn\.naver/i.test(src) && 
-              !imageSet.has(src)) {
-            imageSet.add(src);
-            images.push(src);
-          }
-        });
-      });
-      
-      return { title, detailHtml, images: images.slice(0, 10) };
-    });
+  // Puppeteer package removed for Vercel compatibility
+  console.log('[Puppeteer] Package not available in production');
+  return { title: '제목 추출 실패', listPrice: '', salePrice: '', images: [], descriptionHtml: '' };
 
-    // iframe 내부 상세정보 보조 수집
-    let detailHtml = domData.detailHtml;
-    if (!detailHtml) {
-      for (const f of page.frames()) {
-        try {
-          if (f === page.mainFrame()) continue;
-          const htmlInFrame = await f.evaluate(() => document.body ? document.body.innerHTML : '');
-          if (htmlInFrame && /상품|상세|detail|description|이미지/i.test(htmlInFrame)) {
-            detailHtml = htmlInFrame;
-            break;
-          }
-        } catch (_) { /* ignore */ }
-      }
-    }
-
-    // 정규 파서와 Puppeteer 결과 합치기
-    const html = await page.content();
-    const parsed = parseNaver(html, productUrl);
-    
-    // 이미지 합치기 (Puppeteer 결과 우선)
-    const combinedImages = Array.from(new Set([
-      ...(domData.images || []),
-      ...(parsed.images || [])
-    ])).slice(0, 10);
-
-    return {
-      title: domData.title || parsed.title,
-      listPrice: parsed.listPrice,
-      salePrice: parsed.salePrice,
-      images: combinedImages,
-      descriptionHtml: detailHtml || parsed.descriptionHtml || ''
-    };
-  } finally {
-    await browser.close();
-  }
 }
 
 app.get('/', (req, res) => {
