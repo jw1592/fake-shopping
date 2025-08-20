@@ -72,8 +72,15 @@ async function scrapeDanawa(productUrl) {
           title = $(selector).first().text().trim();
         }
         if (title) {
-          // 불필요한 텍스트 제거 (샵다나와, 다나와 등)
-          title = title.replace(/\s*:\s*(샵)?다나와.*$/i, '').trim();
+          // 불필요한 텍스트 제거 (다양한 패턴 대응)
+          title = title
+            .replace(/\s*:\s*샵다나와.*$/i, '')     // ": 샵다나와" 제거
+            .replace(/\s*:\s*다나와.*$/i, '')       // ": 다나와" 제거  
+            .replace(/\s*-\s*샵다나와.*$/i, '')     // "- 샵다나와" 제거
+            .replace(/\s*-\s*다나와.*$/i, '')       // "- 다나와" 제거
+            .replace(/\s*\|\s*샵다나와.*$/i, '')    // "| 샵다나와" 제거
+            .replace(/\s*\|\s*다나와.*$/i, '')      // "| 다나와" 제거
+            .trim();
           console.log(`Title found with selector "${selector}":`, title.substring(0, 50));
           break;
         }
@@ -258,6 +265,17 @@ function getMainPageHTML() {
 // 상품 페이지 HTML
 function getProductPageHTML(data) {
   console.log('Generating page with data:', JSON.stringify(data, null, 2));
+  
+  // 상품명 최종 정리 (안전장치)
+  let cleanTitle = data.title
+    .replace(/\s*:\s*샵다나와.*$/i, '')
+    .replace(/\s*:\s*다나와.*$/i, '')
+    .replace(/\s*-\s*샵다나와.*$/i, '')
+    .replace(/\s*-\s*다나와.*$/i, '')
+    .replace(/\s*\|\s*샵다나와.*$/i, '')
+    .replace(/\s*\|\s*다나와.*$/i, '')
+    .trim();
+    
   const images = data.images || ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'];
   const mainImage = images[0];
   const thumbnails = images.slice(0, 4); // 썸네일 최대 4개
@@ -267,7 +285,7 @@ function getProductPageHTML(data) {
 <html lang="ko">
 <head>
     <meta charset="utf-8">
-    <title>${data.title} - 상품 페이지</title>
+    <title>${cleanTitle} - 상품 페이지</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #333; }
@@ -472,7 +490,7 @@ function getProductPageHTML(data) {
             
             <div class="prod_view_info">
                 <div class="product-brand">브랜드명</div>
-                <h1>${data.title}</h1>
+                <h1>${cleanTitle}</h1>
                 ${data.description ? `<div class="product-desc">${data.description}</div>` : ''}
                 
                 <div class="rating-section">
