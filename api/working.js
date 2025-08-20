@@ -295,14 +295,9 @@ function getProductPageHTML(data) {
             display: flex; 
             gap: 30px; 
         }
-        .header-nav a { 
-            text-decoration: none; 
+        .header-nav span { 
             color: #666; 
             font-weight: 500; 
-            cursor: pointer; 
-        }
-        .header-nav a:hover { 
-            color: #1e88e5; 
         }
         .header-utils { 
             display: flex; 
@@ -311,7 +306,6 @@ function getProductPageHTML(data) {
         }
         .header-utils span { 
             color: #666; 
-            cursor: pointer; 
         }
         
         /* 메인 컨테이너 */
@@ -398,13 +392,8 @@ function getProductPageHTML(data) {
         .footer-section li { 
             margin-bottom: 10px; 
         }
-        .footer-section a { 
+        .footer-section span { 
             color: #bdc3c7; 
-            text-decoration: none; 
-            cursor: pointer; 
-        }
-        .footer-section a:hover { 
-            color: #ecf0f1; 
         }
         .footer-bottom { 
             border-top: 1px solid #34495e; 
@@ -425,10 +414,12 @@ function getProductPageHTML(data) {
             color: white; 
             border: none; 
             border-radius: 6px; 
-            cursor: pointer; 
             transition: background 0.2s; 
         }
-        .footer-btn:hover { 
+        .footer-btn:first-child { 
+            cursor: pointer; 
+        }
+        .footer-btn:first-child:hover { 
             background: #4a6741; 
         }
         
@@ -449,17 +440,17 @@ function getProductPageHTML(data) {
 <body>
     <header class="main-header__inner">
         <div class="header-content">
-            <a href="#" class="header-logo" onclick="alert('메인 페이지'); return false;">ShopMall</a>
+            <div class="header-logo">핫딜닷컴</div>
             <nav class="header-nav">
-                <a href="#" onclick="alert('카테고리'); return false;">카테고리</a>
-                <a href="#" onclick="alert('베스트'); return false;">베스트</a>
-                <a href="#" onclick="alert('특가'); return false;">특가</a>
-                <a href="#" onclick="alert('이벤트'); return false;">이벤트</a>
+                <span>카테고리</span>
+                <span>베스트</span>
+                <span>특가</span>
+                <span>이벤트</span>
             </nav>
             <div class="header-utils">
-                <span onclick="alert('검색')">🔍</span>
-                <span onclick="alert('마이페이지')">👤</span>
-                <span onclick="alert('장바구니')">🛒</span>
+                <span>🔍</span>
+                <span>👤</span>
+                <span>🛒</span>
             </div>
         </div>
     </header>
@@ -541,50 +532,50 @@ function getProductPageHTML(data) {
                 <div class="footer-section">
                     <h3>고객센터</h3>
                     <ul>
-                        <li><a href="#" onclick="alert('전화상담'); return false;">📞 1588-0000</a></li>
-                        <li><a href="#" onclick="alert('채팅상담'); return false;">💬 채팅상담</a></li>
-                        <li><a href="#" onclick="alert('FAQ'); return false;">❓ 자주하는질문</a></li>
-                        <li><a href="#" onclick="alert('1:1문의'); return false;">📧 1:1문의</a></li>
+                        <li><span>📞 1588-0000</span></li>
+                        <li><span>💬 채팅상담</span></li>
+                        <li><span>❓ 자주하는질문</span></li>
+                        <li><span>📧 1:1문의</span></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h3>쇼핑정보</h3>
                     <ul>
-                        <li><a href="#" onclick="alert('배송안내'); return false;">🚚 배송안내</a></li>
-                        <li><a href="#" onclick="alert('교환반품'); return false;">↩️ 교환/반품</a></li>
-                        <li><a href="#" onclick="alert('결제안내'); return false;">💳 결제안내</a></li>
-                        <li><a href="#" onclick="alert('적립금'); return false;">💰 적립금안내</a></li>
+                        <li><span>🚚 배송안내</span></li>
+                        <li><span>↩️ 교환/반품</span></li>
+                        <li><span>💳 결제안내</span></li>
+                        <li><span>💰 적립금안내</span></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h3>회사정보</h3>
                     <ul>
-                        <li><a href="#" onclick="alert('회사소개'); return false;">🏢 회사소개</a></li>
-                        <li><a href="#" onclick="alert('이용약관'); return false;">📋 이용약관</a></li>
-                        <li><a href="#" onclick="alert('개인정보처리방침'); return false;">🔒 개인정보처리방침</a></li>
-                        <li><a href="#" onclick="alert('사업자정보'); return false;">📄 사업자정보</a></li>
+                        <li><span>🏢 회사소개</span></li>
+                        <li><span>📋 이용약관</span></li>
+                        <li><span>🔒 개인정보처리방침</span></li>
+                        <li><span>📄 사업자정보</span></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h3>SNS & 앱</h3>
                     <ul>
-                        <li><a href="#" onclick="alert('페이스북'); return false;">📘 Facebook</a></li>
-                        <li><a href="#" onclick="alert('인스타그램'); return false;">📷 Instagram</a></li>
-                        <li><a href="#" onclick="alert('유튜브'); return false;">📹 YouTube</a></li>
-                        <li><a href="#" onclick="alert('앱다운로드'); return false;">📱 앱 다운로드</a></li>
+                        <li><span>📘 Facebook</span></li>
+                        <li><span>📷 Instagram</span></li>
+                        <li><span>📹 YouTube</span></li>
+                        <li><span>📱 앱 다운로드</span></li>
                     </ul>
                 </div>
             </div>
             
             <div class="footer-buttons">
                 <button class="footer-btn" onclick="window.scrollTo(0,0)">⬆️ 맨위로가기</button>
-                <button class="footer-btn" onclick="alert('최근본상품')">👁️ 최근본상품</button>
-                <button class="footer-btn" onclick="alert('찜한상품')">❤️ 찜한상품</button>
+                <button class="footer-btn">👁️ 최근본상품</button>
+                <button class="footer-btn">❤️ 찜한상품</button>
             </div>
             
             <div class="footer-bottom">
-                <p>© 2024 ShopMall Corp. All rights reserved. | 대표: 홍길동 | 사업자등록번호: 123-45-67890</p>
-                <p>주소: 서울특별시 강남구 테헤란로 123, 샘플빌딩 10층 | 통신판매업신고: 제2024-서울강남-0000호</p>
+                <p>© 2024 핫딜닷컴 Corp. All rights reserved. | 대표: 홍길동 | 사업자등록번호: 123-45-67890</p>
+                <p>주소: 서울특별시 강남구 테헤란로 123, 핫딜빌딩 10층 | 통신판매업신고: 제2024-서울강남-0000호</p>
                 <p style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">
                     본 사이트는 데모 페이지입니다. 실제 판매나 거래가 이루어지지 않습니다.
                 </p>
