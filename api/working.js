@@ -2,10 +2,6 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const crypto = require('crypto');
 
-// 구글 시트 설정
-const GOOGLE_SHEET_ID = '1oAYTXUow6mQnOh5kfv3xFJQJL02C0Va0EropeM2aSxQ';
-const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&gid=0`;
-
 // ID 생성 함수
 function generateId(length = 8) {
   return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
@@ -33,88 +29,7 @@ function urlSafeBase64Decode(encoded) {
   }
 }
 
-// 구글 시트에서 상품 데이터 가져오기
-async function getProductFromSheet(contentId) {
-  try {
-    console.log('Fetching product data for:', contentId);
-    
-    const response = await axios.get(GOOGLE_SHEET_CSV_URL, {
-      timeout: 10000
-    });
-    
-    // CSV 파싱 (간단한 방식)
-    const lines = response.data.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    
-    console.log('Sheet headers:', headers);
-    
-    // content_id로 해당 행 찾기
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      
-      // CSV 파싱 (따옴표 처리)
-      const values = [];
-      let current = '';
-      let inQuotes = false;
-      
-      for (let j = 0; j < line.length; j++) {
-        const char = line[j];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      values.push(current.trim()); // 마지막 값
-      
-      const rowContentId = values[0]?.replace(/"/g, '');
-      
-      if (rowContentId === contentId) {
-        // 데이터 객체 생성
-        const productData = {
-          content_id: values[0]?.replace(/"/g, '') || '',
-          product_name: values[1]?.replace(/"/g, '') || '',
-          product_desc: values[2]?.replace(/"/g, '') || '',
-          thumb_img_url: values[3]?.replace(/"/g, '') || '',
-          product_img_url: values[4]?.replace(/"/g, '') || ''
-        };
-        
-        // 이미지 URL들을 배열로 변환
-        const thumbImages = productData.thumb_img_url 
-          ? productData.thumb_img_url.split(',').map(url => url.trim()).filter(url => url)
-          : [];
-        const detailImages = productData.product_img_url 
-          ? productData.product_img_url.split(',').map(url => url.trim()).filter(url => url)
-          : [];
-        
-        const result = {
-          title: productData.product_name,
-          description: productData.product_desc,
-          images: [...thumbImages, ...detailImages], // 썸네일 + 상세 이미지
-          thumbnails: thumbImages.slice(0, 4), // 썸네일 최대 4개
-          detailImages: detailImages,
-          listPrice: '',
-          customPrice: '',
-          contentId: productData.content_id
-        };
-        
-        console.log('Found product:', result.title);
-        return result;
-      }
-    }
-    
-    console.log('Product not found:', contentId);
-    return null;
-    
-  } catch (error) {
-    console.error('Sheet fetch error:', error.message);
-    return null;
-  }
-}
+
 
 // 다나와 스크래핑 (개선된 버전)
 async function scrapeDanawa(productUrl) {
@@ -278,21 +193,20 @@ function getMainPageHTML() {
     <div class="container">
         <div class="logo">💰</div>
         <h1>허락보다 용서가 쉽다!<br>유부남용 특가 상품 메이커</h1>
-        <p>다나와 URL을 입력하면 자동으로 스크래핑해서 구글 시트에 저장하고 상품 페이지를 생성합니다.</p>
+        <p>다나와 URL을 입력하면 자동으로 스크래핑해서 프로페셔널한 상품 페이지를 생성합니다.</p>
         
         <form id="productForm">
             <input type="url" name="productUrl" placeholder="다나와 상품 URL" required />
             <input type="text" name="listPrice" placeholder="정가 (선택)" />
             <input type="text" name="customPrice" placeholder="특가 (선택)" />
-            <button type="submit">스크래핑 후 페이지 만들기</button>
+            <button type="submit">상품 페이지 만들기</button>
         </form>
         
         <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px;">
-            <p><strong>💡 새로운 방식:</strong></p>
+            <p><strong>💡 간편한 사용법:</strong></p>
             <p>1. 다나와 URL 입력 → 자동 스크래핑</p>
-            <p>2. 스크래핑 성공 → 구글 시트에 자동 저장</p>
-            <p>3. content_id 생성 → 상품 페이지 생성</p>
-            <p>4. 다음번부터는 빠른 조회 가능!</p>
+            <p>2. 상품 정보 추출 → 프로 쇼핑몰 스타일 페이지 생성</p>
+            <p>3. 공유 가능한 영구 링크 생성!</p>
         </div>
         
         <div id="result"></div>
@@ -326,23 +240,7 @@ function getMainPageHTML() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    let html = '<div class="success">';
-                    html += '<h3>✅ ' + data.message + '</h3>';
-                    html += '<p><a href="' + data.link + '" target="_blank">생성된 페이지 보기</a></p>';
-                    
-                    if (data.sheetData) {
-                        html += '<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px;">';
-                        html += '<strong>📝 구글 시트에 추가할 데이터:</strong><br>';
-                        html += 'A: ' + data.sheetData.content_id + '<br>';
-                        html += 'B: ' + data.sheetData.product_name + '<br>';
-                        html += 'C: ' + data.sheetData.product_desc + '<br>';
-                        html += 'D: ' + data.sheetData.thumb_img_url + '<br>';
-                        html += 'E: ' + data.sheetData.product_img_url;
-                        html += '</div>';
-                    }
-                    
-                    html += '</div>';
-                    result.innerHTML = html;
+                    result.innerHTML = '<div class="success"><h3>✅ ' + data.message + '</h3><p><a href="' + data.link + '" target="_blank">생성된 페이지 보기</a></p></div>';
                 } else {
                     result.innerHTML = '<div class="error"><h3>❌ 오류</h3><p>' + data.message + '</p></div>';
                 }
@@ -580,7 +478,7 @@ function getProductPageHTML(data) {
             </div>
             
             <div class="prod_view_info">
-                <div class="product-brand">브랜드명 (${data.contentId || 'Unknown'})</div>
+                <div class="product-brand">브랜드명</div>
                 <h1>${data.title}</h1>
                 ${data.description ? `<div class="product-desc">${data.description}</div>` : ''}
                 
@@ -760,35 +658,12 @@ module.exports = async (req, res) => {
               return;
             }
             
-            // content_id 자동 생성
-            const contentId = generateId(8).toUpperCase();
-            
-            // 구글 시트에 저장할 데이터 준비
-            const sheetData = {
-              content_id: contentId,
-              product_name: scrapedData.title,
-              product_desc: scrapedData.description,
-              thumb_img_url: scrapedData.images.slice(0, 4).join(','), // 썸네일 최대 4개
-              product_img_url: scrapedData.images.slice(4).join(',') // 나머지는 상세이미지
-            };
-            
-            // TODO: 구글 시트에 자동 저장 (현재는 로깅만)
-            console.log('=== 구글 시트에 저장할 데이터 ===');
-            console.log(`A: ${sheetData.content_id}`);
-            console.log(`B: ${sheetData.product_name}`);
-            console.log(`C: ${sheetData.product_desc}`);
-            console.log(`D: ${sheetData.thumb_img_url}`);
-            console.log(`E: ${sheetData.product_img_url}`);
-            console.log('================================');
-            
             const pageData = {
               title: scrapedData.title,
               description: scrapedData.description,
               listPrice: listPrice.replace(/[^0-9]/g, ''),
               customPrice: customPrice.replace(/[^0-9]/g, ''),
-              images: scrapedData.images,
-              contentId: contentId,
-              sheetData: sheetData // 디버깅용
+              images: scrapedData.images
             };
             
             const encodedData = urlSafeBase64Encode(pageData);
@@ -798,9 +673,7 @@ module.exports = async (req, res) => {
             res.status(200).json({ 
               link: productLink, 
               success: true,
-              contentId: contentId,
-              message: `스크래핑 완료! content_id: ${contentId}`,
-              sheetData: sheetData
+              message: '스크래핑 완료!'
             });
             resolve();
             
