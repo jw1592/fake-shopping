@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>허락보다 용서가 쉽다! 유부남용 특가 상품 메이커</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="alternate icon" href="/assets/favicon.ico">
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header-section">
+        <div class="logo-section">
+          <div class="logo-icon">💰</div>
+          <div class="title-section">
+            <h1>허락보다 용서가 쉽다!<br>유부남용 특가 상품 메이커</h1>
+            <p class="subtitle">쇼핑몰 페이지 빌더</p>
+          </div>
+        </div>
+        <p class="hint">샵다나와 상품 URL을 붙여넣으면 공개 정보 기반으로 요약합니다. 본 페이지는 실제 쇼핑몰이 아닙니다.</p>
+      </div>
+      <form id="gen-form">
+        <label>상품 원본 URL</label>
+        <input name="productUrl" type="url" placeholder="https://shop.danawa.com/main/?controller=goods&methods=blog&type=blog&productSeq=9589341" required />
+
+        <label>템플릿</label>
+        <select name="template">
+          <option value="naver" selected>네이버 스마트스토어</option>
+        </select>
+
+        <label>정가(선택) — 숫자만</label>
+        <input name="listPrice" type="text" placeholder="ex) 199000" />
+
+        <label>구매 가격(필수) — 숫자만</label>
+        <input name="customPrice" type="text" placeholder="ex) 129000" required />
+
+        <label>상품명(선택)</label>
+        <input name="manualTitle" type="text" placeholder="미입력시 상품 원본의 상품명이 표시됩니다." />
+
+        <button id="submitBtn" type="submit">페이지 만들기</button>
+        <div id="loading" class="loading" style="display:none;">
+          <div class="spinner"></div>
+          <span>생성 중...</span>
+        </div>
+      </form>
+
+      <div id="result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+      const form = document.getElementById('gen-form');
+      const result = document.getElementById('result');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        result.style.display = 'none';
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+        const btn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        btn.disabled = true; btn.style.opacity = '0.6';
+        loading.style.display = 'inline-flex';
+        try {
+          const res = await fetch('/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || '실패');
+          result.innerHTML = `<p>생성 성공! 미리보기 링크: <a href="${data.link}" target="_blank">${data.link}</a> ${data.fallback ? '(스크레이핑 실패 — 수동 입력 기반)' : ''}</p>`;
+          result.style.display = 'block';
+        } catch (err) {
+          result.innerHTML = `<p style="color:red;">${err.message}</p>`;
+          result.style.display = 'block';
+        } finally {
+          btn.disabled = false; btn.style.opacity = '1';
+          loading.style.display = 'none';
+        }
+      });
+    </script>
+  </body>
+  </html>
+
+

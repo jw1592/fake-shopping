@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= data.title %> - 허락보다 용서가 쉽다! 유부남용 특가 상품 메이커</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="alternate icon" href="/assets/favicon.ico">
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body class="naver">
+    <header class="main-header">
+      <div class="main-header__inner">
+        <div class="header-left">
+          <span class="naver-logo">NAVER</span>
+          <nav class="main-nav">
+            <span class="nav-item">쇼핑</span>
+            <span class="nav-item">쇼핑라이브</span>
+            <span class="nav-item active">스마트스토어</span>
+            <span class="nav-item">브랜드스토어</span>
+          </nav>
+        </div>
+        <div class="header-center">
+          <div class="search-box">
+            <input type="text" placeholder="상품을 검색해보세요" readonly>
+            <button class="search-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M11.5 6.5a5 5 0 1 1-10 0 5 5 0 0 1 10 0z"></path>
+                <path d="m13 13-4.35-4.35"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="header-btn">마이쇼핑</button>
+          <button class="header-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l1.313 7h8.17l1.313-7H3.102zM5 12.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm7 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0z"/>
+            </svg>
+          </button>
+          <button class="header-btn login-btn">로그인</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="nv-page">
+      <main class="nv-product">
+        <section class="gallery">
+          <% if ((data.images || []).length > 0) { %>
+            <img class="main-img" id="mainImg" src="<%= data.images[0] %>" alt="상품 이미지" />
+            <!-- 클릭 가능한 썸네일들 -->
+            <div class="thumbs" id="thumbs">
+              <% (data.images || []).slice(0,4).forEach(function(src, i){ %>
+                <img class="thumb <%= i === 0 ? 'active' : '' %>" data-idx="<%= i %>" src="<%= src %>" alt="상품 이미지 <%= i + 1 %>" onclick="changeMainImage('<%= src %>', <%= i %>)" />
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="image-placeholder">
+              <div class="placeholder-main">
+                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                  <rect width="120" height="120" fill="#f8f9fa" stroke="#e9ecef" stroke-width="2" rx="8"/>
+                  <path d="M30 80L50 60L70 80L90 60V90H30V80Z" fill="#dee2e6"/>
+                  <circle cx="45" cy="45" r="8" fill="#dee2e6"/>
+                  <text x="60" y="105" text-anchor="middle" fill="#6c757d" font-size="12">이미지 없음</text>
+                </svg>
+              </div>
+            </div>
+          <% } %>
+        </section>
+        <section class="buy-box card">
+          <h1 class="title"><%= data.title %></h1>
+          <% if (data.description) { %>
+            <p class="product-description"><%= data.description %></p>
+          <% } %>
+          
+          <div class="product-info">
+            <div class="rating-area">
+              <div class="stars">
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">☆</span>
+                <span class="rating-text">4.5</span>
+                <span class="review-count">(리뷰 128개)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="price-area">
+            <% if (data.listPrice) { %>
+              <div class="origin">
+                <span class="label">정가</span>
+                <span class="line"><%= Number(data.listPrice).toLocaleString() %>원</span>
+              </div>
+            <% } %>
+            <% if (data.customPrice) { %>
+              <div class="sale">
+                <span class="label">판매가</span>
+                <span class="strong"><%= Number(data.customPrice).toLocaleString() %>원</span>
+              </div>
+            <% } %>
+            <% if (data.listPrice && data.customPrice) { %>
+              <div class="diff">
+                <% const pct = Math.round((1 - Number(data.customPrice)/Number(data.listPrice)) * 100); %>
+                <span class="discount-rate"><%= isFinite(pct) && pct > 0 ? pct + '%' : '0%' %></span>
+                <span class="discount-label">할인</span>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="delivery-info">
+            <div class="delivery-item">
+              <span class="label">배송</span>
+              <span class="value">무료배송</span>
+            </div>
+            <div class="delivery-item">
+              <span class="label">도착</span>
+              <span class="value">내일 도착 예정</span>
+            </div>
+          </div>
+
+          <div class="options">
+            <div class="option-group">
+              <label class="option-label">수량</label>
+              <div class="quantity-controls">
+                <button type="button" class="qty-btn minus" disabled>-</button>
+                <input type="number" value="1" min="1" class="qty-input" readonly>
+                <button type="button" class="qty-btn plus" disabled>+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="cart-btn" onclick="showLoginPopup()">장바구니</button>
+            <button class="buy-btn" onclick="showLoginPopup()">구매하기</button>
+          </div>
+          
+
+        </section>
+      </main>
+      <section class="nv-detail card">
+        <h2>상품 상세정보</h2>
+        <div class="detail-html">
+          <%- data.descriptionHtml || '<div style="text-align: center; padding: 40px; color: #666;">상품 상세 정보가 없습니다.</div>' %>
+        </div>
+      </section>
+    </div>
+
+    <!-- 네이버 스마트스토어 스타일 풋터 -->
+    <footer class="naver-footer">
+      <div class="footer-content">
+        <div class="seller-info">
+          <p class="return-notice">반품 배송비, 반품 배송주소 등은 해당 상품 페이지 내 안내를 참고해주세요.</p>
+          <div class="seller-details">
+            <span class="seller-name">샘플 스토어</span>
+            <span class="seller-owner">홍길동</span>
+            <span class="seller-badge">인증</span>
+            <button type="button" class="seller-info-btn" onclick="alert('판매자 정보는 데모 페이지에서 제공되지 않습니다.')">판매자 상세정보 확인</button>
+            <div class="privacy-policy">
+              <button class="privacy-btn" type="button" onclick="alert('판매자 개인정보 처리방침은 데모 페이지에서 제공되지 않습니다.')">판매자 개인정보 처리방침</button>
+            </div>
+          </div>
+          <div class="social-links">
+            <span class="social-link facebook" onclick="alert('소셜 미디어 링크는 데모에서 제공되지 않습니다.')">페이스북</span>
+            <span class="social-link instagram" onclick="alert('소셜 미디어 링크는 데모에서 제공되지 않습니다.')">인스타그램</span>
+          </div>
+        </div>
+
+        <div class="footer-links">
+          <ul class="link-list">
+            <li><span class="footer-link" onclick="alert('약관 링크는 데모에서 제공되지 않습니다.')">네이버 약관</span></li>
+            <li><span class="footer-link" onclick="alert('약관 링크는 데모에서 제공되지 않습니다.')">네이버페이 이용약관</span></li>
+            <li><span class="footer-link" onclick="alert('약관 링크는 데모에서 제공되지 않습니다.')">전자금융거래 이용약관</span></li>
+            <li><span class="footer-link strong" onclick="alert('개인정보처리방침은 데모에서 제공되지 않습니다.')">개인정보처리방침</span></li>
+            <li><span class="footer-link" onclick="alert('법적고지는 데모에서 제공되지 않습니다.')">책임의 한계와 법적고지</span></li>
+            <li><span class="footer-link" onclick="alert('청소년보호정책은 데모에서 제공되지 않습니다.')">청소년보호정책</span></li>
+            <li><span class="footer-link" onclick="alert('권리보호센터는 데모에서 제공되지 않습니다.')">권리보호센터</span></li>
+            <li><span class="footer-link" onclick="alert('안전거래 가이드는 데모에서 제공되지 않습니다.')">안전거래 가이드</span></li>
+            <li><span class="footer-link" onclick="alert('고객센터는 데모에서 제공되지 않습니다.')">쇼핑&페이 고객센터</span></li>
+          </ul>
+
+          <div class="company-info">
+            <div class="info-section">
+              <strong>네이버㈜</strong>
+              <div class="info-details">
+                사업자등록번호 220-81-62517 | 통신판매업신고번호 2006-경기성남-0692호<br>
+                대표이사 최수연 | 경기도 성남시 분당구 정자일로 95, NAVER 1784, 13561<br>
+                전화 1588-3819 | 이메일 <span class="email-link" onclick="alert('이메일 링크는 데모에서 제공되지 않습니다.')">helpcustomer@naver.com</span> | 
+                <span class="reg-info-link" onclick="alert('사업자정보는 데모에서 제공되지 않습니다.')">사업자등록정보 확인</span><br>
+                호스팅 서비스 제공 : NAVER Cloud
+              </div>
+            </div>
+            
+            <div class="info-section">
+              <strong>고객센터</strong>
+              <div class="info-details">
+                강원도 춘천시 퇴계로 89 강원전문건설회관<br>
+                전화 1588-3819 <span class="call-link" onclick="alert('전화 서비스는 데모에서 제공되지 않습니다.')">전화전클릭</span><br>
+                결제도용신고 1588-3816<br>
+                <span class="inquiry-link strong" onclick="alert('1:1문의는 데모에서 제공되지 않습니다.')">1:1문의 바로가기</span>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <strong>전자금융거래 분쟁처리</strong>
+              <div class="info-details">
+                전화 1588-3819<br>
+                <span class="inquiry-link strong" onclick="alert('1:1문의는 데모에서 제공되지 않습니다.')">1:1문의 바로가기</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="disclaimer">
+            네이버㈜는 통신판매중개자이며, 통신판매의 당사자가 아닙니다. 상품, 상품정보, 거래에 관한 의무와 책임은 판매자에게 있습니다.
+            <span class="detail-link" onclick="alert('자세한 정보는 데모에서 제공되지 않습니다.')">자세히보기</span>
+          </p>
+
+          <div class="copyright">
+            <span class="naver-logo" onclick="alert('네이버 링크는 데모에서 제공되지 않습니다.')">NAVER</span>
+            <em>Copyright ©</em>
+            <span class="corp-link strong" onclick="alert('네이버 기업 정보는 데모에서 제공되지 않습니다.')">NAVER Corp.</span>
+            All Rights Reserved.
+          </div>
+        </div>
+
+        <div class="footer-actions">
+          <button class="share-btn" onclick="alert('공유 기능은 데모에서 제공되지 않습니다.')">공유하기</button>
+          <button class="top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">맨위로가기</button>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // 로그인 팝업 기능
+      function showLoginPopup() {
+        alert('로그인이 필요합니다.\n\n실제 서비스에서는 로그인 페이지로 이동됩니다.\n(현재는 데모 페이지입니다)');
+      }
+
+      // 썸네일 갤러리 기능
+      function changeMainImage(src, index) {
+        const mainImg = document.getElementById('mainImg');
+        const thumbs = document.querySelectorAll('.thumb');
+        
+        if (mainImg) {
+          mainImg.src = src;
+        }
+        
+        // 모든 썸네일에서 active 클래스 제거
+        thumbs.forEach(thumb => thumb.classList.remove('active'));
+        
+        // 클릭된 썸네일에 active 클래스 추가
+        const clickedThumb = document.querySelector(`[data-idx="${index}"]`);
+        if (clickedThumb) {
+          clickedThumb.classList.add('active');
+        }
+      }
+
+      // 페이지 로드 시 첫 번째 이미지에 active 클래스 적용
+      document.addEventListener('DOMContentLoaded', function() {
+        const firstThumb = document.querySelector('.thumb[data-idx="0"]');
+        if (firstThumb) {
+          firstThumb.classList.add('active');
+        }
+      });
+    </script>
+  </body>
+  </html>
+
+
