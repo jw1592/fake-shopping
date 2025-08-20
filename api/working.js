@@ -2,6 +2,10 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const crypto = require('crypto');
 
+// 구글 시트 설정
+const GOOGLE_SHEET_ID = '1oAYTXUow6mQnOh5kfv3xFJQJL02C0Va0EropeM2aSxQ';
+const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&gid=0`;
+
 // ID 생성 함수
 function generateId(length = 8) {
   return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
@@ -25,6 +29,89 @@ function urlSafeBase64Decode(encoded) {
     return JSON.parse(Buffer.from(base64, 'base64').toString());
   } catch (error) {
     console.error('Decode error:', error);
+    return null;
+  }
+}
+
+// 구글 시트에서 상품 데이터 가져오기
+async function getProductFromSheet(contentId) {
+  try {
+    console.log('Fetching product data for:', contentId);
+    
+    const response = await axios.get(GOOGLE_SHEET_CSV_URL, {
+      timeout: 10000
+    });
+    
+    // CSV 파싱 (간단한 방식)
+    const lines = response.data.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    
+    console.log('Sheet headers:', headers);
+    
+    // content_id로 해당 행 찾기
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // CSV 파싱 (따옴표 처리)
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim()); // 마지막 값
+      
+      const rowContentId = values[0]?.replace(/"/g, '');
+      
+      if (rowContentId === contentId) {
+        // 데이터 객체 생성
+        const productData = {
+          content_id: values[0]?.replace(/"/g, '') || '',
+          product_name: values[1]?.replace(/"/g, '') || '',
+          product_desc: values[2]?.replace(/"/g, '') || '',
+          thumb_img_url: values[3]?.replace(/"/g, '') || '',
+          product_img_url: values[4]?.replace(/"/g, '') || ''
+        };
+        
+        // 이미지 URL들을 배열로 변환
+        const thumbImages = productData.thumb_img_url 
+          ? productData.thumb_img_url.split(',').map(url => url.trim()).filter(url => url)
+          : [];
+        const detailImages = productData.product_img_url 
+          ? productData.product_img_url.split(',').map(url => url.trim()).filter(url => url)
+          : [];
+        
+        const result = {
+          title: productData.product_name,
+          description: productData.product_desc,
+          images: [...thumbImages, ...detailImages], // 썸네일 + 상세 이미지
+          thumbnails: thumbImages.slice(0, 4), // 썸네일 최대 4개
+          detailImages: detailImages,
+          listPrice: '',
+          customPrice: '',
+          contentId: productData.content_id
+        };
+        
+        console.log('Found product:', result.title);
+        return result;
+      }
+    }
+    
+    console.log('Product not found:', contentId);
+    return null;
+    
+  } catch (error) {
+    console.error('Sheet fetch error:', error.message);
     return null;
   }
 }
@@ -191,15 +278,21 @@ function getMainPageHTML() {
     <div class="container">
         <div class="logo">💰</div>
         <h1>허락보다 용서가 쉽다!<br>유부남용 특가 상품 메이커</h1>
-        <p>다나와 URL을 입력하면 자동으로 상품 페이지를 생성합니다.</p>
+        <p>상품 코드(content_id)를 입력하면 구글 시트에서 데이터를 가져와 상품 페이지를 생성합니다.</p>
         
         <form id="productForm">
-            <input type="url" name="productUrl" placeholder="다나와 상품 URL" required />
-            <input type="text" name="manualTitle" placeholder="상품명 (선택 - 자동 추출됨)" />
+            <input type="text" name="contentId" placeholder="상품 코드 (예: KM120-001)" required />
             <input type="text" name="listPrice" placeholder="정가 (선택)" />
             <input type="text" name="customPrice" placeholder="특가 (선택)" />
             <button type="submit">페이지 만들기</button>
         </form>
+        
+        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 14px;">
+            <p><strong>💡 사용 방법:</strong></p>
+            <p>1. 구글 시트에서 상품 정보 관리</p>
+            <p>2. content_id로 빠른 페이지 생성</p>
+            <p>3. 더 이상 스크래핑 실패 걱정 없음!</p>
+        </div>
         
         <div id="result"></div>
     </div>
@@ -240,7 +333,8 @@ function getProductPageHTML(data) {
   console.log('Generating page with data:', JSON.stringify(data, null, 2));
   const images = data.images || ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'];
   const mainImage = images[0];
-  const thumbnails = images.slice(0, 4);
+  const thumbnails = images.slice(0, 4); // 썸네일 최대 4개
+  const detailImages = images.slice(4); // 나머지는 상세 이미지
   
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -310,7 +404,11 @@ function getProductPageHTML(data) {
         <div class="detail">
             <h2>상품 상세정보</h2>
             <div style="text-align: center; padding: 40px;">
-                <img src="${mainImage}" style="max-width: 100%; height: auto;" alt="상품 상세" />
+                ${data.description ? `<p style="margin-bottom: 30px; font-size: 16px; color: #666;">${data.description}</p>` : ''}
+                ${detailImages.length > 0 
+                  ? detailImages.map(img => `<img src="${img}" style="max-width: 100%; height: auto; margin-bottom: 20px; display: block;" alt="상품 상세" />`).join('')
+                  : `<img src="${mainImage}" style="max-width: 100%; height: auto;" alt="상품 상세" />`
+                }
             </div>
         </div>
     </div>
@@ -360,27 +458,36 @@ module.exports = async (req, res) => {
         req.on('end', async () => {
           try {
             const formData = new URLSearchParams(body);
-            const productUrl = formData.get('productUrl');
-            const manualTitle = formData.get('manualTitle') || '';
+            const contentId = formData.get('contentId');
             const listPrice = formData.get('listPrice') || '';
             const customPrice = formData.get('customPrice') || '';
             
-            console.log('Generate request:', { productUrl, manualTitle });
+            console.log('Generate request:', { contentId, listPrice, customPrice });
             
-            let scraped = { title: '', images: [], listPrice: '', description: '' };
+            if (!contentId) {
+              res.setHeader('Content-Type', 'application/json');
+              res.status(400).json({ error: 'content_id is required', message: '상품 코드를 입력해주세요.' });
+              resolve();
+              return;
+            }
             
-            // 다나와 스크래핑 시도
-            if (productUrl && productUrl.includes('danawa.com')) {
-              scraped = await scrapeDanawa(productUrl);
+            // 구글 시트에서 상품 데이터 가져오기
+            const productData = await getProductFromSheet(contentId);
+            
+            if (!productData) {
+              res.setHeader('Content-Type', 'application/json');
+              res.status(404).json({ error: 'Product not found', message: `상품 코드 '${contentId}'를 찾을 수 없습니다.` });
+              resolve();
+              return;
             }
             
             const pageData = {
-              title: manualTitle || scraped.title || '상품명(미확인)',
-              description: scraped.description || '',
-              listPrice: (listPrice || scraped.listPrice || '').replace(/[^0-9]/g, ''),
+              title: productData.title || '상품명(미확인)',
+              description: productData.description || '',
+              listPrice: listPrice.replace(/[^0-9]/g, ''),
               customPrice: customPrice.replace(/[^0-9]/g, ''),
-              images: scraped.images.length > 0 ? scraped.images : ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'],
-              productUrl: productUrl
+              images: productData.images.length > 0 ? productData.images : ['https://via.placeholder.com/500x500/f8f9fa/6c757d?text=No+Image'],
+              contentId: contentId
             };
             
             const encodedData = urlSafeBase64Encode(pageData);
