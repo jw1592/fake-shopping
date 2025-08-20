@@ -15,10 +15,27 @@ function generateId(length = 8) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Vercel 환경 대응
-const isVercel = process.env.VERCEL || process.env.NODE_ENV === 'production';
-const viewsPath = isVercel ? path.join(process.cwd(), 'views') : path.join(__dirname, '../views');
-const assetsPath = isVercel ? path.join(process.cwd(), 'assets') : path.join(__dirname, '../assets');
+// Vercel 환경 대응 - 더 안전한 경로 처리
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV || process.env.NODE_ENV === 'production';
+
+// Vercel에서는 루트 기준, 로컬에서는 상대 경로
+let viewsPath, assetsPath;
+try {
+  if (isVercel) {
+    // Vercel 환경에서는 루트에서 찾기
+    viewsPath = path.join(process.cwd(), 'views');
+    assetsPath = path.join(process.cwd(), 'assets');
+  } else {
+    // 로컬 환경
+    viewsPath = path.join(__dirname, '../views');
+    assetsPath = path.join(__dirname, '../assets');
+  }
+} catch (err) {
+  console.error('Path setup error:', err);
+  // 폴백 경로
+  viewsPath = path.join(__dirname, '../views');
+  assetsPath = path.join(__dirname, '../assets');
+}
 
 app.set('view engine', 'ejs');
 app.set('views', viewsPath);
@@ -578,13 +595,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Vercel에서는 module.exports 사용
+// Vercel 서버리스 함수 export
 if (isVercel) {
+  // Vercel 환경에서는 Express app을 그대로 export
   module.exports = app;
 } else {
+  // 로컬 개발 환경에서는 서버 시작
   app.listen(PORT, () => {
     console.log(`Fake shopping server listening on http://localhost:${PORT}`);
+    console.log(`Views path: ${viewsPath}`);
+    console.log(`Assets path: ${assetsPath}`);
   });
 }
+
+// 기본 export도 추가 (Vercel 호환성 향상)
+module.exports = app;
 
 
