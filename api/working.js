@@ -370,37 +370,201 @@ function getProductPageHTML(data) {
     <title>${data.title} - 상품 페이지</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-        .header { background: #fff; border-bottom: 1px solid #eee; padding: 10px 20px; }
-        .naver-logo { color: #03c75a; font-weight: bold; font-size: 24px; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-        .main-image { width: 100%; height: 400px; object-fit: cover; border-radius: 8px; }
-        .thumbnails { display: flex; gap: 10px; margin-top: 15px; }
-        .thumbnail { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
-        .thumbnail.active, .thumbnail:hover { border-color: #03c75a; }
-        .product-info h1 { font-size: 24px; margin-bottom: 20px; }
-        .price { font-size: 20px; color: #e74c3c; font-weight: bold; margin: 20px 0; }
-        .buttons { display: flex; gap: 10px; margin-top: 30px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-        .cart-btn { background: white; color: #03c75a; border: 2px solid #03c75a; }
-        .buy-btn { background: #03c75a; color: white; }
-        .detail { margin-top: 40px; }
-        .detail h2 { margin-bottom: 20px; }
-        .footer { background: #f8f9fa; margin-top: 60px; padding: 40px 0; text-align: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #333; }
+        
+        /* 헤더 스타일 */
+        .main-header__inner { 
+            background: #fff; 
+            border-bottom: 1px solid #e5e5e5; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .header-content { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            height: 60px; 
+        }
+        .header-logo { 
+            font-size: 28px; 
+            font-weight: bold; 
+            color: #1e88e5; 
+            text-decoration: none; 
+        }
+        .header-nav { 
+            display: flex; 
+            gap: 30px; 
+        }
+        .header-nav a { 
+            text-decoration: none; 
+            color: #666; 
+            font-weight: 500; 
+            cursor: pointer; 
+        }
+        .header-nav a:hover { 
+            color: #1e88e5; 
+        }
+        .header-utils { 
+            display: flex; 
+            gap: 15px; 
+            align-items: center; 
+        }
+        .header-utils span { 
+            color: #666; 
+            cursor: pointer; 
+        }
+        
+        /* 메인 컨테이너 */
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+        .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start; }
+        
+        /* 이미지 영역 */
+        .product-images { position: sticky; top: 20px; }
+        .main-image { width: 100%; height: 450px; object-fit: cover; border-radius: 12px; border: 1px solid #eee; }
+        .thumbnails { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .thumbnail { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .thumbnail.active, .thumbnail:hover { border-color: #1e88e5; transform: translateY(-2px); }
+        
+        /* 상품 정보 영역 */
+        .prod_view_info { }
+        .product-info h1 { font-size: 28px; margin-bottom: 10px; font-weight: 700; color: #222; }
+        .product-brand { color: #666; font-size: 16px; margin-bottom: 20px; }
+        .product-desc { color: #777; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+        
+        /* 평점 및 리뷰 */
+        .rating-section { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .stars { color: #ffa726; font-size: 18px; }
+        .rating-text { color: #666; font-size: 14px; }
+        
+        /* 가격 영역 */
+        .price-section { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .original-price { font-size: 16px; color: #999; text-decoration: line-through; margin-bottom: 5px; }
+        .discount-rate { color: #e74c3c; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .current-price { font-size: 24px; color: #e74c3c; font-weight: bold; }
+        
+        /* 배송 정보 */
+        .delivery-info { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .delivery-info strong { color: #1976d2; }
+        
+        /* 옵션 영역 */
+        .options-section { margin-bottom: 25px; }
+        .option-title { font-weight: 600; margin-bottom: 10px; color: #333; }
+        .option-select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        
+        /* 구매 버튼 */
+        .buttons { display: flex; gap: 12px; margin-top: 30px; }
+        .btn { flex: 1; padding: 18px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .cart-btn { background: white; color: #1e88e5; border: 2px solid #1e88e5; }
+        .cart-btn:hover { background: #e3f2fd; }
+        .buy-btn { background: #1e88e5; color: white; }
+        .buy-btn:hover { background: #1565c0; }
+        
+        /* 판매자 정보 */
+        .seller-info { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 14px; }
+        .seller-info strong { color: #333; }
+        
+        /* 상세 정보 */
+        .detail { margin-top: 60px; }
+        .detail h2 { font-size: 24px; margin-bottom: 30px; color: #222; border-bottom: 2px solid #1e88e5; padding-bottom: 10px; }
+        .detail-content { text-align: center; padding: 40px; }
+        .detail-desc { margin-bottom: 30px; font-size: 16px; color: #666; line-height: 1.6; }
+        .detail-images img { max-width: 100%; height: auto; margin-bottom: 30px; border-radius: 8px; }
+        
+        /* 푸터 */
+        #footer_shop_danawa { 
+            background: #2c3e50; 
+            margin-top: 80px; 
+            color: white; 
+        }
+        .footer-content { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 50px 20px 30px; 
+        }
+        .footer-top { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 40px; 
+            margin-bottom: 40px; 
+        }
+        .footer-section h3 { 
+            color: #ecf0f1; 
+            margin-bottom: 20px; 
+            font-size: 18px; 
+        }
+        .footer-section ul { 
+            list-style: none; 
+        }
+        .footer-section li { 
+            margin-bottom: 10px; 
+        }
+        .footer-section a { 
+            color: #bdc3c7; 
+            text-decoration: none; 
+            cursor: pointer; 
+        }
+        .footer-section a:hover { 
+            color: #ecf0f1; 
+        }
+        .footer-bottom { 
+            border-top: 1px solid #34495e; 
+            padding-top: 20px; 
+            text-align: center; 
+            color: #95a5a6; 
+            font-size: 14px; 
+        }
+        .footer-buttons { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+            margin-bottom: 20px; 
+        }
+        .footer-btn { 
+            padding: 10px 20px; 
+            background: #34495e; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+        }
+        .footer-btn:hover { 
+            background: #4a6741; 
+        }
         
         @media (max-width: 768px) {
-            .product-layout { grid-template-columns: 1fr; }
+            .header-nav { display: none; }
+            .product-layout { grid-template-columns: 1fr; gap: 30px; }
             .main-image { height: 300px; }
             .thumbnail { width: 60px; height: 60px; }
             .buttons { flex-direction: column; }
+            .footer-top { grid-template-columns: repeat(2, 1fr); gap: 30px; }
+        }
+        
+        @media (max-width: 480px) {
+            .footer-top { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="naver-logo">NAVER</div>
-    </div>
+    <header class="main-header__inner">
+        <div class="header-content">
+            <a href="#" class="header-logo" onclick="alert('메인 페이지'); return false;">ShopMall</a>
+            <nav class="header-nav">
+                <a href="#" onclick="alert('카테고리'); return false;">카테고리</a>
+                <a href="#" onclick="alert('베스트'); return false;">베스트</a>
+                <a href="#" onclick="alert('특가'); return false;">특가</a>
+                <a href="#" onclick="alert('이벤트'); return false;">이벤트</a>
+            </nav>
+            <div class="header-utils">
+                <span onclick="alert('검색')">🔍</span>
+                <span onclick="alert('마이페이지')">👤</span>
+                <span onclick="alert('장바구니')">🛒</span>
+            </div>
+        </div>
+    </header>
     
     <div class="container">
         <div class="product-layout">
@@ -415,35 +579,120 @@ function getProductPageHTML(data) {
                 </div>
             </div>
             
-            <div class="product-info">
+            <div class="prod_view_info">
+                <div class="product-brand">브랜드명 (${data.contentId || 'Unknown'})</div>
                 <h1>${data.title}</h1>
-                ${data.description ? `<p>${data.description}</p>` : ''}
-                ${data.listPrice ? `<div class="price">정가: ${parseInt(data.listPrice).toLocaleString()}원</div>` : ''}
-                ${data.customPrice ? `<div class="price">특가: ${parseInt(data.customPrice).toLocaleString()}원</div>` : ''}
+                ${data.description ? `<div class="product-desc">${data.description}</div>` : ''}
+                
+                <div class="rating-section">
+                    <div class="stars">★★★★☆</div>
+                    <span class="rating-text">4.2점 (리뷰 ${Math.floor(Math.random() * 500) + 50}개)</span>
+                </div>
+                
+                <div class="price-section">
+                    ${data.listPrice ? `<div class="original-price">정가: ${parseInt(data.listPrice).toLocaleString()}원</div>` : ''}
+                    ${data.listPrice && data.customPrice ? `<div class="discount-rate">${Math.round(((parseInt(data.listPrice) - parseInt(data.customPrice)) / parseInt(data.listPrice)) * 100)}% 할인</div>` : ''}
+                    <div class="current-price">
+                        ${data.customPrice ? `${parseInt(data.customPrice).toLocaleString()}원` : 
+                          data.listPrice ? `${parseInt(data.listPrice).toLocaleString()}원` : 
+                          '가격 문의'}
+                    </div>
+                </div>
+                
+                <div class="delivery-info">
+                    <strong>🚚 배송정보:</strong> 무료배송 (2-3일 소요) | 당일발송 가능
+                </div>
+                
+                <div class="options-section">
+                    <div class="option-title">옵션 선택</div>
+                    <select class="option-select" onclick="alert('옵션 선택')">
+                        <option>기본형 (추가금액 없음)</option>
+                        <option>고급형 (+5,000원)</option>
+                        <option>프리미엄형 (+10,000원)</option>
+                    </select>
+                </div>
                 
                 <div class="buttons">
-                    <button class="btn cart-btn" onclick="alert('로그인이 필요합니다.')">장바구니</button>
-                    <button class="btn buy-btn" onclick="alert('로그인이 필요합니다.')">구매하기</button>
+                    <button class="btn cart-btn" onclick="alert('로그인이 필요합니다.')">🛒 장바구니</button>
+                    <button class="btn buy-btn" onclick="alert('로그인이 필요합니다.')">💳 바로구매</button>
+                </div>
+                
+                <div class="seller-info">
+                    <strong>판매자:</strong> 공식 쇼핑몰 | <strong>평점:</strong> 4.8/5.0 | <strong>문의:</strong> 1588-0000
                 </div>
             </div>
         </div>
         
         <div class="detail">
             <h2>상품 상세정보</h2>
-            <div style="text-align: center; padding: 40px;">
-                ${data.description ? `<p style="margin-bottom: 30px; font-size: 16px; color: #666;">${data.description}</p>` : ''}
-                ${detailImages.length > 0 
-                  ? detailImages.map(img => `<img src="${img}" style="max-width: 100%; height: auto; margin-bottom: 20px; display: block;" alt="상품 상세" />`).join('')
-                  : `<img src="${mainImage}" style="max-width: 100%; height: auto;" alt="상품 상세" />`
-                }
+            <div class="detail-content">
+                ${data.description ? `<div class="detail-desc">${data.description}</div>` : ''}
+                <div class="detail-images">
+                    ${detailImages.length > 0 
+                      ? detailImages.map(img => `<img src="${img}" alt="상품 상세" />`).join('')
+                      : `<img src="${mainImage}" alt="상품 상세" />`
+                    }
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="footer">
-        <p>© NAVER Corp. (데모 페이지)</p>
-        <button onclick="window.scrollTo(0,0)" style="margin-top: 10px; padding: 10px 20px; background: #03c75a; color: white; border: none; border-radius: 4px;">맨위로가기</button>
-    </div>
+    <footer id="footer_shop_danawa">
+        <div class="footer-content">
+            <div class="footer-top">
+                <div class="footer-section">
+                    <h3>고객센터</h3>
+                    <ul>
+                        <li><a href="#" onclick="alert('전화상담'); return false;">📞 1588-0000</a></li>
+                        <li><a href="#" onclick="alert('채팅상담'); return false;">💬 채팅상담</a></li>
+                        <li><a href="#" onclick="alert('FAQ'); return false;">❓ 자주하는질문</a></li>
+                        <li><a href="#" onclick="alert('1:1문의'); return false;">📧 1:1문의</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>쇼핑정보</h3>
+                    <ul>
+                        <li><a href="#" onclick="alert('배송안내'); return false;">🚚 배송안내</a></li>
+                        <li><a href="#" onclick="alert('교환반품'); return false;">↩️ 교환/반품</a></li>
+                        <li><a href="#" onclick="alert('결제안내'); return false;">💳 결제안내</a></li>
+                        <li><a href="#" onclick="alert('적립금'); return false;">💰 적립금안내</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>회사정보</h3>
+                    <ul>
+                        <li><a href="#" onclick="alert('회사소개'); return false;">🏢 회사소개</a></li>
+                        <li><a href="#" onclick="alert('이용약관'); return false;">📋 이용약관</a></li>
+                        <li><a href="#" onclick="alert('개인정보처리방침'); return false;">🔒 개인정보처리방침</a></li>
+                        <li><a href="#" onclick="alert('사업자정보'); return false;">📄 사업자정보</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>SNS & 앱</h3>
+                    <ul>
+                        <li><a href="#" onclick="alert('페이스북'); return false;">📘 Facebook</a></li>
+                        <li><a href="#" onclick="alert('인스타그램'); return false;">📷 Instagram</a></li>
+                        <li><a href="#" onclick="alert('유튜브'); return false;">📹 YouTube</a></li>
+                        <li><a href="#" onclick="alert('앱다운로드'); return false;">📱 앱 다운로드</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-buttons">
+                <button class="footer-btn" onclick="window.scrollTo(0,0)">⬆️ 맨위로가기</button>
+                <button class="footer-btn" onclick="alert('최근본상품')">👁️ 최근본상품</button>
+                <button class="footer-btn" onclick="alert('찜한상품')">❤️ 찜한상품</button>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>© 2024 ShopMall Corp. All rights reserved. | 대표: 홍길동 | 사업자등록번호: 123-45-67890</p>
+                <p>주소: 서울특별시 강남구 테헤란로 123, 샘플빌딩 10층 | 통신판매업신고: 제2024-서울강남-0000호</p>
+                <p style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">
+                    본 사이트는 데모 페이지입니다. 실제 판매나 거래가 이루어지지 않습니다.
+                </p>
+            </div>
+        </div>
+    </footer>
     
     <script>
         function changeImage(src, thumb) {
