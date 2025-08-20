@@ -303,6 +303,13 @@ function getMainPageHTML() {
             e.preventDefault();
             
             const formData = new FormData(e.target);
+            const urlParams = new URLSearchParams();
+            
+            // FormData를 URLSearchParams로 변환
+            for (const [key, value] of formData.entries()) {
+                urlParams.append(key, value);
+            }
+            
             const result = document.getElementById('result');
             
             try {
@@ -310,7 +317,10 @@ function getMainPageHTML() {
                 
                 const response = await fetch('/generate', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: urlParams.toString()
                 });
                 
                 const data = await response.json();
