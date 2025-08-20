@@ -2,7 +2,14 @@ const path = require('path');
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { nanoid } = require('nanoid');
+// const { nanoid } = require('nanoid'); // ESM 오류로 인해 주석 처리
+// Node.js 내장 crypto 모듈 사용
+const crypto = require('crypto');
+
+// nanoid 대체 함수
+function generateId(length = 8) {
+  return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
+}
 let puppeteer; // lazy load
 
 const app = express();
@@ -595,7 +602,7 @@ app.post('/generate', async (req, res) => {
       }
     }
 
-    const id = nanoid(8);
+    const id = generateId(8);
     // 이미지와 상세 콘텐츠 처리
     let finalImages = [];
     let finalDescriptionHtml = '';
@@ -642,7 +649,7 @@ app.post('/generate', async (req, res) => {
   } catch (err) {
     console.error(err);
     // 실패해도 수동 입력 기반으로 페이지를 생성해 성공 응답을 보낸다
-    const id = nanoid(8);
+    const id = generateId(8);
     const fallbackGalleryImages = [
       'https://via.placeholder.com/500x500/f8f9fa/6c757d?text=Fallback+Image+1',
       'https://via.placeholder.com/500x500/f8f9fa/6c757d?text=Fallback+Image+2',
