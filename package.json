@@ -2,19 +2,21 @@
   "name": "fake-shopping",
   "version": "1.0.0",
   "private": true,
-  "description": "쿠팡/네이버 스타일 상품 상세 페이크 페이지 생성기",
+  "description": "특가 상품 메이커 - 쇼핑몰 페이지 빌더",
   "main": "src/server.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
   "keywords": [
-    "coupang",
-    "naver",
-    "smartstore",
-    "fake",
-    "mock",
-    "product"
+    "shopping",
+    "danawa",
+    "product",
+    "page",
+    "builder"
   ],
   "author": "",
   "license": "MIT",
@@ -30,4 +32,3 @@
     "nodemon": "^3.1.4"
   }
 }
-

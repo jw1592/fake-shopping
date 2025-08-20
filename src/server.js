@@ -419,6 +419,12 @@ async function scrapeOpenGraph(productUrl) {
 }
 
 async function scrapeWithPuppeteer(productUrl, site) {
+  // Vercel 환경에서는 Puppeteer 사용 안 함
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    console.log('[Puppeteer] 프로덕션 환경에서는 Puppeteer를 사용하지 않습니다.');
+    return { title: '제목 추출 실패', listPrice: '', salePrice: '', images: [], descriptionHtml: '' };
+  }
+
   if (!puppeteer) {
     puppeteer = require('puppeteer');
   }
